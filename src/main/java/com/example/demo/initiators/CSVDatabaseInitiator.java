@@ -1,4 +1,4 @@
-package com.example.demo.controller;
+package com.example.demo.initiators;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -10,28 +10,35 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.boot.ApplicationArguments;
+import org.springframework.boot.ApplicationRunner;
+import org.springframework.stereotype.Component;
 
 import com.example.demo.dto.Client;
 import com.example.demo.dto.Location;
 import com.example.demo.dto.Name;
 import com.example.demo.dto.Picture;
 import com.example.demo.dto.Timezone;
+import com.example.demo.model.ClientModel;
 import com.example.demo.repository.ClientRepository;
 import com.example.demo.utils.Cordinates;
 import com.opencsv.CSVReader;
-import com.opencsv.exceptions.CsvException;
 
-@RestController
-@RequestMapping("/helloWorld")
-public class TesteControler {
-
+@Component
+public class CSVDatabaseInitiator implements ApplicationRunner {
 	@Autowired
-	private ClientRepository clientRepository;
+	public ClientRepository clientRepo;
 
-	private Client CSVToModel(String[] lista) {
+	private BufferedReader getCSVBuffer() throws IOException {
+		URL urlCSV = new URL("https://storage.googleapis.com/juntossomosmais-code-challenge/input-backend.csv");
+
+		URLConnection urlConn = urlCSV.openConnection();
+
+		InputStreamReader inputCSV = new InputStreamReader(((URLConnection) urlConn).getInputStream());
+		return new BufferedReader(inputCSV);
+	}
+
+	private ClientModel CSVToModel(String[] lista) {
 
 		Name name = new Name(lista[1], lista[2], lista[3]);
 
@@ -42,36 +49,28 @@ public class TesteControler {
 		Client client = new Client(name, location, lista[0], lista[12], lista[13], lista[15], lista[17], lista[18],
 				pictures);
 
-		return client;
+		return new ClientModel(client);
 	}
 
-	@GetMapping
-	public List<Client> falaOlaMundo() throws IOException, CsvException {
+	@Override
+	public void run(ApplicationArguments args) throws Exception {
 		try {
-			URL urlCSV = new URL("https://storage.googleapis.com/juntossomosmais-code-challenge/input-backend.csv");
+			BufferedReader buffer = getCSVBuffer();
+			buffer.readLine(); // first line has csv headers
 
-			URLConnection urlConn = urlCSV.openConnection();
-
-			InputStreamReader inputCSV = new InputStreamReader(((URLConnection) urlConn).getInputStream());
-			BufferedReader br = new BufferedReader(inputCSV);
-
-			br.readLine();
-
-			try (CSVReader csvReader = new CSVReader(br)) {
+			try (CSVReader csvReader = new CSVReader(buffer)) {
 				List<String[]> lista = csvReader.readAll();
-				List<Client> clientList = new ArrayList<Client>();
+				List<ClientModel> clientList = new ArrayList<ClientModel>();
 
 				for (int contadorLinha = 0; contadorLinha < lista.size(); contadorLinha++) {
 					clientList.add(CSVToModel(lista.get(contadorLinha)));
 				}
-				return clientList;
+				clientRepo.saveAll(clientList);
 			}
 		} catch (MalformedURLException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 			System.out.print("alo");
 		}
-		return null;
 	}
-
 }

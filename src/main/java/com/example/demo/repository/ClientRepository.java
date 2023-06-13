@@ -5,8 +5,6 @@ import org.springframework.stereotype.Repository;
 
 import com.example.demo.model.ClientModel;
 
-
 @Repository
-public interface ClientRepository extends JpaRepository<ClientModel, String> {
-
+public interface ClientRepository extends JpaRepository<ClientModel, String>, PaginatedClientRepository {
 }

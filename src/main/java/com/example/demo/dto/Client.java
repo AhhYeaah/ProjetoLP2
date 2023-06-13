@@ -1,20 +1,27 @@
 package com.example.demo.dto;
 
+import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 import java.util.ArrayList;
 
 import com.example.demo.BoundingBoxes.ClientType;
 import com.example.demo.Enums.ClientTypeEnum;
+import com.example.demo.Enums.Gender;
+import com.example.demo.model.ClientModel;
+import com.example.demo.utils.Cordinates;
 
 public class Client {
 	public ClientTypeEnum type;
 
 	public Name name;
-	public char gender;
+	public Gender gender;
 
 	public Location location;
 	public String email;
-	public String birthday;
-	public String registered;
+
+	public LocalDateTime birthday;
+	public LocalDateTime registered;
 
 	public ArrayList<String> telephoneNumbers = new ArrayList<String>();
 	public ArrayList<String> mobileNumbers = new ArrayList<String>();;
@@ -23,18 +30,23 @@ public class Client {
 
 	public String nationality = "BR";
 
-	private char pickGenderLetter(String gender) {
-		// bruh, == doesnt work on strings
-		// stupid language.
-		if (gender.equals("male")) {
-			return 'm';
-		} else {
-			return 'f';
-		}
-	}
+	public Client(ClientModel clientModel) {
+		this.type = clientModel.getType();
+		this.name = new Name(clientModel.getTitle(), clientModel.getFirst(), clientModel.getLast());
+		this.gender = clientModel.getGender();
+		this.location = new Location(clientModel.getStreet(), clientModel.getCity(), clientModel.getState(),
+				clientModel.getPostcode(), new Cordinates(clientModel.getLongitude(), clientModel.getLatitude()),
+				new Timezone(clientModel.getOffset(), clientModel.getDescription()));
 
-	private String getFormatedPhoneNumber(String phoneNumber) {
-		return "+55" + phoneNumber.replaceAll("\\D+", "");
+		this.email = clientModel.getEmail();
+		this.birthday = clientModel.getBirthday();
+		this.registered = clientModel.getRegistered();
+
+		this.telephoneNumbers = new ArrayList<>(clientModel.getTelephonePhones());
+		this.mobileNumbers = new ArrayList<>(clientModel.getMobilePhones());
+
+		this.pictures = new Picture(clientModel.getLarge(), clientModel.getMedium(), clientModel.getThumbnail()); // available
+		this.nationality = clientModel.getNationality();
 	}
 
 	public Client(Name name, Location location, String gender, String email, String birthday, String registered,
@@ -44,8 +56,8 @@ public class Client {
 		this.name = name;
 		this.email = email;
 
-		this.birthday = birthday;
-		this.registered = registered;
+		this.birthday = LocalDateTime.ofInstant(Instant.parse(birthday), ZoneOffset.UTC);
+		this.registered = LocalDateTime.ofInstant(Instant.parse(registered), ZoneOffset.UTC);
 		this.type = ClientType.getClientType(location.cordinates);
 
 		this.location = location;
@@ -56,6 +68,18 @@ public class Client {
 		this.gender = pickGenderLetter(gender);
 
 		this.pictures = pictures;
+	}
+
+	private Gender pickGenderLetter(String gender) {
+		if (gender.equals("male")) {
+			return Gender.M;
+		} else {
+			return Gender.F;
+		}
+	}
+
+	private String getFormatedPhoneNumber(String phoneNumber) {
+		return "+55" + phoneNumber.replaceAll("\\D+", "");
 	}
 
 	@Override
